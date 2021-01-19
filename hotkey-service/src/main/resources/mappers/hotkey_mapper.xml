@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.tallate.hotkey.dao.HotKeyDao">
+
+    <resultMap id="map" type="com.tallate.hotkey.HotKey">
+        <id column="id" property="id"/>
+        <result column="h_key" property="key"/>
+        <result column="h_count" property="count"/>
+        <result column="collect_time" property="collectTime"/>
+        <result column="address" property="address"/>
+        <result column="rate" property="rate"/>
+    </resultMap>
+
+    <sql id="columns">
+        h_key, h_count, collect_time, address, rate
+    </sql>
+
+    <insert id="save" parameterType="com.tallate.hotkey.HotKey">
+        insert into hot_key (
+        <include refid="columns"/>
+        )
+        values (#{key}, #{count}, #{collectTime}, #{address}, #{rate})
+        on duplicate key update
+        h_count = #{count},
+        collect_time = #{collectTime},
+        rate = #{rate}
+    </insert>
+
+    <select id="queryAllAddress" parameterType="java.lang.String"
+            resultType="com.tallate.hotkey.bean.KeyAddressPair">
+        select distinct h_key `key`, address
+        from hot_key
+        where h_key in
+        <foreach collection="keys" item="k" open="(" close=")" separator=",">
+            #{k}
+        </foreach>
+    </select>
+
+    <select id="queryRecentCollects" resultMap="map">
+        select
+        <include refid="columns"/>
+        from hot_key
+        where 1=1
+        <if test="key != null and key != ''">
+            and h_key = #{key}
+        </if>
+        <if test="address != null and address != ''">
+            and address = #{address}
+        </if>
+        order by collect_time desc
+    </select>
+
+    <select id="queryHotKeys" resultMap="map">
+        select h_key, h_count, collect_time, address, rate rate
+        from hot_key
+        where collect_time &gt;= #{lastSampleTime}
+        order by rate desc
+    </select>
+
+</mapper>
